@@ -1,0 +1,5 @@
+# Generated street data (large, re-creatable with import_osm.mjs)
+out/
+
+# Secrets: Supabase service role key and TEAM_ID live here, never commit
+.env
