@@ -1,0 +1,8 @@
+{
+  "appId": "com.sahaharita.app",
+  "appName": "Saha Harita",
+  "webDir": "../docs",
+  "android": {
+    "allowMixedContent": false
+  }
+}
