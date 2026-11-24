@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1b5e20">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1b5e20" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1d12" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Saha Harita">
   <title>Saha Harita</title>
@@ -14,115 +16,262 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>Saha Harita</h1>
-    <span id="durum-badge" class="badge" aria-live="polite">Yükleniyor</span>
-    <button id="btn-ayarlar" class="icon-btn" aria-label="Ayarlar">&#9881;</button>
-  </header>
+  <!-- Icon sprite (inline SVG, no external files) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m6 7V8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3m0 13v3M2.5 12h3m13 0h3M5.3 5.3l2.1 2.1m9.2 9.2 2.1 2.1M5.3 18.7l2.1-2.1m9.2-9.2 2.1-2.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </svg>
 
   <!-- Login (only when not in demo mode) -->
-  <section id="login-view" class="panel" hidden>
-    <h2>Giriş</h2>
-    <form id="form-login">
-      <label>E-posta
-        <input id="login-email" type="email" autocomplete="email" required>
-      </label>
-      <button type="submit">Giriş bağlantısı gönder</button>
-    </form>
-    <p id="login-msg" class="muted"></p>
-    <div id="team-section" hidden>
-      <h2>Ekip</h2>
-      <p class="muted">Çalışacağınız ekibi seçin.</p>
-      <div id="team-list" class="list"></div>
+  <section id="login-view" class="login-wrap" hidden>
+    <div class="login-card">
+      <p class="eyebrow">Saha Harita</p>
+      <h2>Giriş</h2>
+      <form id="form-login">
+        <label>E-posta
+          <input id="login-email" type="email" autocomplete="email" required>
+        </label>
+        <button type="submit" class="block">Giriş bağlantısı gönder</button>
+      </form>
+      <p id="login-msg" class="muted small"></p>
+      <div id="team-section" hidden>
+        <h3>Ekip</h3>
+        <p class="muted small">Çalışacağınız ekibi seçin.</p>
+        <div id="team-list" class="list plain"></div>
+      </div>
     </div>
   </section>
 
-  <main id="app-view" hidden>
-    <div class="toolbar">
-      <select id="mahalle-select" aria-label="Mahalle"></select>
-      <div class="tabs" role="tablist">
-        <button class="tab active" data-view="map" role="tab">Harita</button>
-        <button class="tab" data-view="list" role="tab">Liste</button>
-      </div>
-    </div>
-    <div id="stats" class="stats"></div>
-
-    <div id="map-view" class="view">
-      <section id="gezi-panel" class="gezi-panel" aria-label="Gezi">
-        <div class="gezi-row">
-          <button id="btn-gezi" type="button">Gezi başlat</button>
-          <label class="inline">Rota
-            <select id="route-show" aria-label="Gösterilecek rota">
-              <option value="active">Aktif gezi</option>
-              <option value="last">Son gezi</option>
-              <option value="off">Gösterme</option>
-            </select>
-          </label>
+  <div id="app-view" class="app" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SH</span>
+        <div class="brand-text">
+          <h1>Saha Harita</h1>
+          <p id="konum-baslik" class="konum">Mahalle seçin</p>
         </div>
-        <p id="gezi-note" class="muted small"></p>
-        <p id="gezi-stats" class="small"></p>
-        <p id="coverage-line" class="small"></p>
-        <p id="business-line" class="small"></p>
-        <p id="route-covered" class="small muted"></p>
+      </div>
+      <span id="durum-badge" class="badge" aria-live="polite">Yükleniyor</span>
+    </header>
+
+    <div class="locbar" role="group" aria-label="Konum seçimi">
+      <label class="fld fld-ilce"><span>İlçe</span>
+        <select id="ilce-select"></select>
+      </label>
+      <label class="fld fld-mahalle"><span>Mahalle</span>
+        <select id="mahalle-select"></select>
+      </label>
+      <button id="btn-ara" type="button" class="btn-icon" aria-label="Mahalle, işletme veya sokak ara">
+        <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+      </button>
+    </div>
+
+    <nav class="nav" aria-label="Ana gezinme">
+      <button type="button" class="nav-btn active" data-view="harita" aria-current="page">
+        <svg class="ic" aria-hidden="true"><use href="#i-map"/></svg><span>Harita</span>
+      </button>
+      <button type="button" class="nav-btn" data-view="liste">
+        <svg class="ic" aria-hidden="true"><use href="#i-list"/></svg><span>Liste</span>
+      </button>
+      <button type="button" class="nav-btn" data-view="panel">
+        <svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg><span>Panel</span>
+      </button>
+      <button type="button" class="nav-btn" data-action="ayarlar">
+        <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg><span>Ayarlar</span>
+      </button>
+    </nav>
+
+    <main class="main">
+      <!-- ===== Harita ===== -->
+      <section id="view-harita" class="view" data-view="harita">
+        <div id="gezi-panel" class="gezi-panel" aria-label="Gezi">
+          <div class="gezi-row">
+            <button id="btn-gezi" type="button">Gezi başlat</button>
+            <label class="inline">Rota
+              <select id="route-show" aria-label="Gösterilecek rota">
+                <option value="active">Aktif gezi</option>
+                <option value="last">Son gezi</option>
+                <option value="off">Gösterme</option>
+              </select>
+            </label>
+          </div>
+          <p id="gezi-stats" class="small"></p>
+          <p id="coverage-line" class="small"></p>
+          <details class="gezi-detay">
+            <summary>Ayrıntılar</summary>
+            <p id="gezi-note" class="muted small"></p>
+            <p id="business-line" class="small"></p>
+            <p id="route-covered" class="small muted"></p>
+          </details>
+        </div>
+
+        <div id="hidden-warning" class="warn-banner" role="alert" hidden>
+          <span id="hidden-warning-text"></span>
+          <button id="hidden-warning-ok" type="button" class="secondary">Tamam</button>
+        </div>
+
+        <div class="map-wrap">
+          <div id="map"></div>
+
+          <div id="map-bos" class="map-empty" hidden>
+            <p id="map-bos-text"></p>
+            <button id="map-bos-ayar" type="button" class="secondary">Ayarlar'ı aç</button>
+          </div>
+
+          <div id="gps-prompt" class="gps-prompt" hidden>
+            <span id="gps-prompt-text"></span>
+            <div class="row">
+              <button id="gps-yes" type="button">Evet, gezildi</button>
+              <button id="gps-no" type="button" class="secondary">Hayır</button>
+            </div>
+          </div>
+
+          <div id="mode-bar" class="mode-bar" hidden>
+            <span id="mode-text"></span>
+            <div class="row">
+              <button id="mode-undo" type="button" class="secondary">Geri al</button>
+              <button id="mode-done" type="button">Bitir</button>
+              <button id="mode-cancel" type="button" class="secondary">İptal</button>
+            </div>
+          </div>
+
+          <div id="legend" class="legend" aria-label="Renk açıklaması">
+            <span class="lg"><i class="sw done" aria-hidden="true"></i>Gezildi / panel</span>
+            <span class="lg"><i class="sw progress" aria-hidden="true"></i>İlgileniyor / devam</span>
+            <span class="lg"><i class="sw todo" aria-hidden="true"></i>Gezilmedi</span>
+            <span class="lg"><i class="sw off" aria-hidden="true"></i>İlgilenmiyor</span>
+            <span id="legend-aday" class="lg" hidden><i class="sw aday" aria-hidden="true"></i>OSM adayı</span>
+            <span class="lg-note">Çizgi: sokak · Nokta: işletme</span>
+          </div>
+
+          <div class="fab-row">
+            <button id="btn-sokak-ekle" type="button">+ Sokak</button>
+            <button id="btn-isletme-ekle" type="button">+ İşletme</button>
+            <button id="btn-aday" type="button" class="secondary" aria-pressed="false">Adaylar</button>
+            <button id="btn-konum" type="button" class="secondary">Konumum</button>
+          </div>
+        </div>
       </section>
 
-      <div id="hidden-warning" class="warn-banner" role="alert" hidden>
-        <span id="hidden-warning-text"></span>
-        <button id="hidden-warning-ok" type="button" class="secondary">Tamam</button>
-      </div>
-
-      <div id="map"></div>
-
-      <div id="gps-prompt" class="gps-prompt" hidden>
-        <span id="gps-prompt-text"></span>
-        <div class="row">
-          <button id="gps-yes" type="button">Evet, gezildi</button>
-          <button id="gps-no" type="button" class="secondary">Hayır</button>
+      <!-- ===== Liste ===== -->
+      <section id="view-liste" class="view" data-view="liste" hidden>
+        <div class="seg" role="tablist" aria-label="Liste türü">
+          <button type="button" class="seg-btn active" role="tab" data-liste="isletme" aria-selected="true">İşletmeler</button>
+          <button type="button" class="seg-btn" role="tab" data-liste="sokak" aria-selected="false">Sokaklar</button>
+          <button type="button" class="seg-btn" role="tab" data-liste="mahalle" aria-selected="false">Mahalleler</button>
         </div>
-      </div>
 
-      <div id="mode-bar" class="mode-bar" hidden>
-        <span id="mode-text"></span>
-        <div class="row">
-          <button id="mode-undo" type="button" class="secondary">Geri al</button>
-          <button id="mode-done" type="button">Bitir</button>
-          <button id="mode-cancel" type="button" class="secondary">İptal</button>
+        <div class="filters">
+          <input id="liste-q" type="search" placeholder="Ad, platform, yetkili, telefon ara" aria-label="Listede ara" autocomplete="off">
+          <div class="filter-grid">
+            <label class="fld"><span>İlçe</span><select id="f-ilce"></select></label>
+            <label class="fld"><span>Mahalle</span><select id="f-mahalle"></select></label>
+            <label class="fld" data-isletme-only><span>Durum</span><select id="f-durum"></select></label>
+            <label class="fld" data-isletme-only><span>Platform</span><select id="f-platform"></select></label>
+            <label class="fld" data-isletme-only><span>Sıralama</span>
+              <select id="f-sort">
+                <option value="ad">Ada göre</option>
+                <option value="son_ziyaret">Son ziyaret (yeni önce)</option>
+                <option value="takip">Takip tarihi (yakın önce)</option>
+              </select>
+            </label>
+          </div>
         </div>
-      </div>
 
-      <div class="fab-row">
-        <button id="btn-sokak-ekle" type="button">+ Sokak</button>
-        <button id="btn-isletme-ekle" type="button">+ İşletme</button>
-        <button id="btn-konum" type="button" class="secondary">Konumum</button>
-      </div>
-    </div>
+        <div class="list-head">
+          <p id="liste-sayi" class="muted small"></p>
+          <div class="row-actions">
+            <button id="btn-isletme-liste" type="button" class="secondary" data-isletme-only>+ İşletme</button>
+            <button id="btn-csv-isletme" type="button" class="secondary" data-isletme-only>CSV indir</button>
+          </div>
+        </div>
 
-    <div id="list-view" class="view" hidden>
-      <div class="search-row">
-        <input id="search" type="search" placeholder="Sokak veya işletme ara">
-        <label class="inline"><input id="search-all" type="checkbox"> Tüm mahalleler</label>
-      </div>
-      <h2>Mahalle ilerlemesi</h2>
-      <p class="muted small">En düşük gezilme oranından başlar. Bir mahalleye dokunun, seçilsin.</p>
-      <ul id="progress-list" class="list"></ul>
-      <h2>Sokaklar</h2>
-      <ul id="street-list" class="list"></ul>
-      <h2>İşletmeler</h2>
-      <ul id="business-list" class="list"></ul>
-    </div>
-  </main>
+        <ul id="business-list" class="list" data-liste-panel="isletme"></ul>
+        <ul id="street-list" class="list" data-liste-panel="sokak" hidden></ul>
+        <ul id="progress-list" class="list" data-liste-panel="mahalle" hidden></ul>
+      </section>
+
+      <!-- ===== Panel ===== -->
+      <section id="view-panel" class="view" data-view="panel" hidden>
+        <header class="panel-head">
+          <p class="eyebrow">Bugün</p>
+          <h2 id="panel-tarih">-</h2>
+        </header>
+
+        <article class="card hedef-kart">
+          <div class="hedef-ust">
+            <div>
+              <p class="muted small">Günlük ziyaret hedefi</p>
+              <p class="hedef-say"><strong id="hedef-done">0</strong><span class="muted"> / <span id="hedef-target">15</span></span></p>
+            </div>
+            <label class="hedef-input"><span>Hedef</span>
+              <input id="hedef-input" type="number" min="1" max="200" step="1" inputmode="numeric">
+            </label>
+          </div>
+          <div class="bar" role="progressbar" aria-label="Günlük hedef" aria-valuemin="0" aria-valuemax="100">
+            <span id="hedef-bar"></span>
+          </div>
+          <p id="hedef-not" class="small muted"></p>
+        </article>
+
+        <div class="kpis">
+          <div class="kpi"><span class="kpi-l">Ziyaret edilen</span><strong id="k-ziyaret">0</strong></div>
+          <div class="kpi"><span class="kpi-l">Mahalle kapsamı</span><strong id="k-mahalle">-</strong></div>
+          <div class="kpi"><span class="kpi-l">İlçe kapsamı</span><strong id="k-ilce">-</strong></div>
+          <div class="kpi"><span class="kpi-l">Dönüşüm</span><strong id="k-donusum">-</strong></div>
+        </div>
+
+        <section class="card">
+          <h3>Huni</h3>
+          <ol id="funnel" class="funnel"></ol>
+        </section>
+
+        <section class="card">
+          <h3>Bugün takip edilecekler</h3>
+          <ul id="takip-bugun" class="list plain"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Geciken takipler</h3>
+          <ul id="takip-geciken" class="list plain"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Bugün ziyaret edilenler</h3>
+          <ul id="bugun-list" class="list plain"></ul>
+        </section>
+
+        <section class="card">
+          <h3>Günlük rapor</h3>
+          <p class="muted small">Seçilen günün işletme ziyaretlerini, gezilen sokaklarını ve gezilerini CSV olarak indirir.</p>
+          <div class="row">
+            <label class="fld grow"><span>Gün</span><input id="rapor-tarih" type="date"></label>
+            <button id="btn-rapor" type="button">CSV indir</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
 
   <!-- Business edit -->
   <dialog id="dlg-isletme">
-    <form id="form-isletme" method="dialog">
+    <form id="form-isletme" method="dialog" novalidate>
       <h2 id="isletme-baslik">İşletme</h2>
+      <p id="isletme-son" class="muted small"></p>
       <input id="isletme-id" type="hidden">
-      <label>Ad <input id="isletme-ad" required></label>
-      <label>Durum
-        <select id="isletme-durum"></select>
-      </label>
+      <label>İşletme adı <input id="isletme-ad" required autocomplete="off"></label>
+      <div id="dup-uyari" class="dup-warn" role="alert" hidden></div>
+      <div class="two">
+        <label>Durum
+          <select id="isletme-durum"></select>
+        </label>
+        <label>Takip tarihi <input id="isletme-takip" type="date"></label>
+      </div>
       <label>Platform
-        <input id="isletme-platform" list="platform-list" placeholder="Yemeksepeti, Getir ...">
+        <input id="isletme-platform" list="platform-list" placeholder="Yemeksepeti, Getir ..." autocomplete="off">
         <datalist id="platform-list">
           <option value="Yemeksepeti"></option>
           <option value="Getir Yemek"></option>
@@ -131,14 +280,16 @@
           <option value="Fuudy"></option>
         </datalist>
       </label>
-      <label>Yetkili <input id="isletme-yetkili"></label>
-      <label>Telefon <input id="isletme-telefon" type="tel"></label>
+      <div class="two">
+        <label>Yetkili <input id="isletme-yetkili"></label>
+        <label>Telefon <input id="isletme-telefon" type="tel" inputmode="tel"></label>
+      </div>
       <label>Adres <input id="isletme-adres"></label>
       <label>Sonraki aksiyon <input id="isletme-aksiyon"></label>
       <label>Notlar <textarea id="isletme-notlar" rows="3"></textarea></label>
       <div class="row end">
         <button type="button" id="isletme-iptal" class="secondary">İptal</button>
-        <button type="submit">Kaydet</button>
+        <button type="submit" id="isletme-kaydet">Kaydet</button>
       </div>
     </form>
   </dialog>
@@ -155,38 +306,76 @@
     </form>
   </dialog>
 
+  <!-- Search: mahalle, business, street -->
+  <dialog id="dlg-ara" class="dlg-full">
+    <div class="ara-head">
+      <input id="ara-q" type="search" placeholder="Mahalle, işletme veya sokak" autocomplete="off" aria-label="Ara">
+      <button id="ara-kapat" type="button" class="secondary">Kapat</button>
+    </div>
+    <p id="ara-bilgi" class="muted small">En az bir harf yazın.</p>
+    <ul id="ara-sonuc" class="list"></ul>
+  </dialog>
+
   <!-- Settings -->
   <dialog id="dlg-ayarlar">
     <div class="settings">
       <h2>Ayarlar</h2>
-      <p id="ayar-mod" class="muted"></p>
-      <label class="inline">
-        <input id="ayar-otomatik" type="checkbox">
-        Sokağa yaklaşınca otomatik gezildi işaretle
-      </label>
-      <p class="muted small">Kapalıyken uygulama sorar, sizin onayınızla işaretler. Açıkken 25 m içindeki sokakları kendisi işaretler.</p>
+      <p id="ayar-mod" class="muted small"></p>
 
-      <h3>Konum kaydı (gezi rotası)</h3>
-      <label>Kayıt aralığı (saniye)
-        <input id="ayar-kayit-sn" type="number" min="5" max="300" step="1">
-      </label>
-      <label>En az hareket (metre)
-        <input id="ayar-kayit-m" type="number" min="1" max="200" step="1">
-      </label>
-      <p class="muted small">Varsayılan: 15 saniye ve 10 metre. Daha sık kayıt rotayı daha ayrıntılı gösterir ama pili çabuk bitirir.</p>
+      <section class="ayar-grup">
+        <h3>Takip</h3>
+        <label class="inline">
+          <input id="ayar-otomatik" type="checkbox">
+          Sokağa yaklaşınca otomatik gezildi işaretle
+        </label>
+        <p class="muted small">Kapalıyken uygulama sorar, sizin onayınızla işaretler. Açıkken 25 m içindeki sokakları kendisi işaretler.</p>
+      </section>
 
-      <h3>Veri</h3>
-      <button id="btn-indir" type="button">Seçili mahalle verisini indir (OSM)</button>
-      <label class="file-label">Dosyadan içe aktar (.json)
-        <input id="file-import" type="file" accept=".json,application/json">
-      </label>
+      <section class="ayar-grup">
+        <h3>Konum kaydı (gezi rotası)</h3>
+        <div class="two">
+          <label>Kayıt aralığı (saniye)
+            <input id="ayar-kayit-sn" type="number" min="5" max="300" step="1" inputmode="numeric">
+          </label>
+          <label>En az hareket (metre)
+            <input id="ayar-kayit-m" type="number" min="1" max="200" step="1" inputmode="numeric">
+          </label>
+        </div>
+        <p class="muted small">Varsayılan: 15 saniye ve 10 metre. Daha sık kayıt rotayı daha ayrıntılı gösterir ama pili çabuk bitirir.</p>
+      </section>
 
-      <h3>Hesap</h3>
-      <p id="ayar-hesap" class="muted small"></p>
-      <div class="row">
-        <button id="btn-ekip" type="button" class="secondary">Ekip değiştir</button>
-        <button id="btn-cikis" type="button" class="secondary">Çıkış yap</button>
-      </div>
+      <section class="ayar-grup">
+        <h3>Veri</h3>
+        <p id="veri-secim" class="muted small"></p>
+        <div class="row">
+          <button id="btn-indir" type="button">Seçili mahalle verisini indir (OSM)</button>
+          <button id="btn-aday-yenile" type="button" class="secondary">Aday işletmeleri yenile</button>
+        </div>
+        <label class="file-label">Dosyadan içe aktar (.json)
+          <input id="file-import" type="file" accept=".json,application/json">
+        </label>
+      </section>
+
+      <section class="ayar-grup">
+        <h3>Mahalle ekle</h3>
+        <p class="muted small">Listede olmayan bir mahalleyi ekleyin. Sonra "Seçili mahalle verisini indir" ile sokakları alın.</p>
+        <form id="form-mahalle" class="mahalle-form" novalidate>
+          <div class="two">
+            <label>İlçe <select id="mahalle-ilce"></select></label>
+            <label>Mahalle adı <input id="mahalle-ad" autocomplete="off"></label>
+          </div>
+          <div class="row end"><button type="submit" class="secondary">Mahalle ekle</button></div>
+        </form>
+      </section>
+
+      <section class="ayar-grup">
+        <h3>Hesap</h3>
+        <p id="ayar-hesap" class="muted small"></p>
+        <div class="row">
+          <button id="btn-ekip" type="button" class="secondary">Ekip değiştir</button>
+          <button id="btn-cikis" type="button" class="secondary">Çıkış yap</button>
+        </div>
+      </section>
 
       <div class="row end">
         <button id="btn-ayar-kapat" type="button">Kapat</button>

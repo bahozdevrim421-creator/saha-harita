@@ -1,6 +1,6 @@
 // Service worker: app shell cache, runtime cache for OSM tiles and CDN files.
 // Supabase API traffic is never cached. Bump SHELL_VERSION on each deploy that changes files.
-const SHELL_VERSION = 'v2';
+const SHELL_VERSION = 'v3';
 const SHELL_CACHE = `saha-shell-${SHELL_VERSION}`;
 const TILE_CACHE = 'saha-tiles-v1';
 const TILE_MAX = 3000;
@@ -14,16 +14,19 @@ const SHELL_FILES = [
   './icons/icon.svg',
   './js/app.js',
   './js/auth.js',
+  './js/csv.js',
   './js/db.js',
   './js/durum.js',
   './js/geo.js',
   './js/gps.js',
   './js/ids.js',
   './js/importer.js',
+  './js/konum.js',
   './js/mapview.js',
   './js/outbox.js',
   './js/overpass.js',
   './js/route.js',
+  './js/sales.js',
   './js/seed.js',
   './js/settings.js',
   './js/store.js',

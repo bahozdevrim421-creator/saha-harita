@@ -20,7 +20,7 @@ const COLUMNS = {
   ],
   isletmeler: [
     'id', 'mahalle_id', 'sokak_id', 'ad', 'platform', 'yetkili', 'telefon', 'adres', 'lat', 'lon',
-    'durum', 'sonraki_aksiyon', 'notlar', 'created_at', 'updated_at',
+    'durum', 'sonraki_aksiyon', 'notlar', 'follow_up_tarih', 'son_ziyaret', 'created_at', 'updated_at',
   ],
   ziyaretler: ['id', 'user_id', 'sokak_id', 'isletme_id', 'lat', 'lon', 'created_at'],
 };

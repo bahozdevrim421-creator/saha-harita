@@ -32,7 +32,7 @@ members of that team.
 - `mahalleler(id uuid pk, team_id uuid fk, ilce text default 'Ümraniye', ad text not null, lat double precision null, lon double precision null, bbox jsonb null, osm_relation_id bigint null, created_at, updated_at, updated_by uuid)`
 - `sokaklar(id uuid pk, team_id uuid fk, mahalle_id uuid fk, ad text, osm_way_ids bigint[] null, geom jsonb not null, durum text not null default 'gezilmedi' check in ('gezilmedi','gezildi'), gezilme_zamani timestamptz null, created_at, updated_at, updated_by uuid)`
   - `geom` is GeoJSON LineString or MultiLineString: `{"type":"LineString","coordinates":[[lon,lat],...]}`
-- `isletmeler(id uuid pk, team_id uuid fk, mahalle_id uuid fk, sokak_id uuid fk null, ad text not null, platform text null, yetkili text null, telefon text null, adres text null, lat double precision null, lon double precision null, durum text not null default 'ziyaret_edilmedi' check in ('ziyaret_edilmedi','ziyaret_edildi_ilgileniyor','ziyaret_edildi_ilgilenmiyor','kayit_tamamlandi','panel_kuruldu','tekrar_ziyaret'), sonraki_aksiyon text null, notlar text null, created_at, updated_at, updated_by uuid)`
+- `isletmeler(id uuid pk, team_id uuid fk, mahalle_id uuid fk, sokak_id uuid fk null, ad text not null, platform text null, yetkili text null, telefon text null, adres text null, lat double precision null, lon double precision null, durum text not null default 'ziyaret_edilmedi' check in ('ziyaret_edilmedi','ziyaret_edildi_ilgileniyor','ziyaret_edildi_ilgilenmiyor','kayit_tamamlandi','panel_kuruldu','tekrar_ziyaret'), sonraki_aksiyon text null, notlar text null, follow_up_tarih date null, son_ziyaret timestamptz null, created_at, updated_at, updated_by uuid)`
 - `ziyaretler(id uuid pk, team_id uuid fk, user_id uuid fk, sokak_id uuid fk null, isletme_id uuid fk null, lat double precision, lon double precision, created_at timestamptz default now())`
   - GPS trail / visit log ("hareketlerim"). Append only.
 
@@ -43,6 +43,11 @@ Durum values are the same snake_case strings in DB and UI. The UI shows Turkish 
 - kayit_tamamlandi = Kayıt tamamlandı
 - panel_kuruldu = Panel kuruldu
 - tekrar_ziyaret = Tekrar ziyaret
+
+`follow_up_tarih` and `son_ziyaret` were added as optional fields (frontend, sales panel).
+  `follow_up_tarih` is the next follow-up date (date only, YYYY-MM-DD, null = none).
+  `son_ziyaret` is the time of the last visit, set when `durum` moves into a visited value.
+  Migration needed before live sync: `alter table public.isletmeler add column if not exists follow_up_tarih date null, add column if not exists son_ziyaret timestamptz null;`
 
 `updated_at` is set by a trigger on every update. `updated_by` is set to `auth.uid()` by trigger.
 

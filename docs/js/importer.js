@@ -37,6 +37,7 @@ export function parseMahalleJson(obj) {
   return {
     mahalle: {
       ad,
+      ilce: typeof obj.ilce === 'string' && obj.ilce.trim() ? obj.ilce.trim() : null,
       lat: Number.isFinite(obj.lat) ? obj.lat : null,
       lon: Number.isFinite(obj.lon) ? obj.lon : null,
       bbox: obj.bbox ?? null,

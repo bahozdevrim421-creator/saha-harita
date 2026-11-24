@@ -1,18 +1,41 @@
-// Durum (status) values and transitions. Pure module.
+// Durum (status) values, transitions and colour groups. Pure module.
 // DB values and UI keys are the same snake_case strings (see SPEC.md).
+//
+// Colour groups (the colours themselves are CSS variables in style.css):
+//   done      green   gezildi / panel kuruldu
+//   progress  amber   ilgileniyor / devam (kayıt, tekrar ziyaret, ilgileniyor)
+//   todo      red     gezilmedi / ziyaret edilmedi
+//   off       grey    ilgilenmiyor
 
 export const ISLETME_DURUMLARI = [
-  { kod: 'ziyaret_edilmedi', etiket: 'Ziyaret edilmedi', renk: '#757575' },
-  { kod: 'ziyaret_edildi_ilgileniyor', etiket: 'Ziyaret edildi - ilgileniyor', renk: '#1e88e5' },
-  { kod: 'ziyaret_edildi_ilgilenmiyor', etiket: 'Ziyaret edildi - ilgilenmiyor', renk: '#8e24aa' },
-  { kod: 'kayit_tamamlandi', etiket: 'Kayıt tamamlandı', renk: '#43a047' },
-  { kod: 'panel_kuruldu', etiket: 'Panel kuruldu', renk: '#00838f' },
-  { kod: 'tekrar_ziyaret', etiket: 'Tekrar ziyaret', renk: '#fb8c00' },
+  { kod: 'ziyaret_edilmedi', etiket: 'Ziyaret edilmedi' },
+  { kod: 'ziyaret_edildi_ilgileniyor', etiket: 'Ziyaret edildi - ilgileniyor' },
+  { kod: 'ziyaret_edildi_ilgilenmiyor', etiket: 'Ziyaret edildi - ilgilenmiyor' },
+  { kod: 'kayit_tamamlandi', etiket: 'Kayıt tamamlandı' },
+  { kod: 'panel_kuruldu', etiket: 'Panel kuruldu' },
+  { kod: 'tekrar_ziyaret', etiket: 'Tekrar ziyaret' },
 ];
 
 export const SOKAK_DURUMLARI = [
-  { kod: 'gezilmedi', etiket: 'Gezilmedi', renk: '#d32f2f' },
-  { kod: 'gezildi', etiket: 'Gezildi', renk: '#2e7d32' },
+  { kod: 'gezilmedi', etiket: 'Gezilmedi' },
+  { kod: 'gezildi', etiket: 'Gezildi' },
+];
+
+const ISLETME_GRUBU = {
+  ziyaret_edilmedi: 'todo',
+  ziyaret_edildi_ilgileniyor: 'progress',
+  ziyaret_edildi_ilgilenmiyor: 'off',
+  kayit_tamamlandi: 'progress',
+  tekrar_ziyaret: 'progress',
+  panel_kuruldu: 'done',
+};
+
+/** Legend texts per colour group, in the order the legend shows them. */
+export const RENK_GRUPLARI = [
+  { grup: 'done', etiket: 'Gezildi / panel' },
+  { grup: 'progress', etiket: 'İlgileniyor / devam' },
+  { grup: 'todo', etiket: 'Gezilmedi' },
+  { grup: 'off', etiket: 'İlgilenmiyor' },
 ];
 
 const ISLETME_DEFAULT = 'ziyaret_edilmedi';
@@ -29,16 +52,18 @@ export function isletmeDurumEtiketi(kod) {
   return ISLETME_DURUMLARI.find((d) => d.kod === kod)?.etiket ?? 'Bilinmiyor';
 }
 
-export function isletmeDurumRengi(kod) {
-  return ISLETME_DURUMLARI.find((d) => d.kod === kod)?.renk ?? '#757575';
+/** Colour group of a business status. Unknown values count as not yet visited. */
+export function isletmeDurumGrubu(kod) {
+  return ISLETME_GRUBU[kod] ?? 'todo';
 }
 
 export function sokakDurumEtiketi(kod) {
   return SOKAK_DURUMLARI.find((d) => d.kod === kod)?.etiket ?? 'Gezilmedi';
 }
 
-export function sokakDurumRengi(kod) {
-  return kod === 'gezildi' ? SOKAK_DURUMLARI[1].renk : SOKAK_DURUMLARI[0].renk;
+/** Colour group of a street status: gezildi is done, anything else is todo. */
+export function sokakDurumGrubu(kod) {
+  return kod === 'gezildi' ? 'done' : 'todo';
 }
 
 /**

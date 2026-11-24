@@ -1,11 +1,12 @@
-// OpenStreetMap street data through the public Overpass API. Browser-side download.
-// parseOverpassMahalle is pure and unit tested. fetchMahalleFromOverpass only runs when called.
+// OpenStreetMap data through the public Overpass API. Browser-side download.
+// parseOverpassMahalle and parseOverpassAdaylar are pure and unit tested.
+// The fetch functions only run when called.
 
 export const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 export const ILCE_ADI = 'Ümraniye';
 
 /**
- * The one Overpass query used by the app. Placeholders __ILCE__ and __MAHALLE__ are replaced
+ * The street query used by the app. Placeholders __ILCE__ and __MAHALLE__ are replaced
  * by buildMahalleQuery(). The district is found by name at admin_level 6, the neighbourhood
  * boundary is searched inside that area, and named highways are taken inside the boundary.
  * OSM spells neighbourhoods either "X" or "X Mahallesi", so both forms are matched.
@@ -18,17 +19,58 @@ way(area.mahArea)["highway"]["name"]->.yollar;
 .mah out bb tags;
 .yollar out geom;`;
 
+/**
+ * Restaurant candidates: named restaurants, fast food and cafes inside the same mahalle boundary.
+ * Same placeholders as above. "out center" gives a point for ways and relations.
+ */
+export const OVERPASS_ADAY_SORGUSU = `[out:json][timeout:90];
+area["boundary"="administrative"]["admin_level"="6"]["name"="__ILCE__"]->.ilce;
+rel(area.ilce)["boundary"="administrative"]["name"~"^__MAHALLE__( Mahallesi)?$"]->.mah;
+.mah map_to_area->.mahArea;
+nwr(area.mahArea)["amenity"~"^(restaurant|fast_food|cafe)$"]["name"];
+out center tags;`;
+
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Builds the query for one mahalle name. Throws if the name is empty. */
-export function buildMahalleQuery(mahalleAdi, ilce = ILCE_ADI) {
+function fillTemplate(sablon, mahalleAdi, ilce) {
   const ad = String(mahalleAdi ?? '').trim();
   if (!ad) throw new Error('Mahalle adı boş.');
-  return OVERPASS_MAHALLE_SORGUSU
-    .replace('__ILCE__', ilce.replace(/"/g, ''))
+  return sablon
+    .replace('__ILCE__', String(ilce ?? ILCE_ADI).replace(/"/g, ''))
     .replace('__MAHALLE__', escapeRegex(ad.replace(/"/g, '')));
+}
+
+/** Builds the street query for one mahalle name. Throws if the name is empty. */
+export function buildMahalleQuery(mahalleAdi, ilce = ILCE_ADI) {
+  return fillTemplate(OVERPASS_MAHALLE_SORGUSU, mahalleAdi, ilce);
+}
+
+/** Builds the restaurant candidate query for one mahalle name. Throws if the name is empty. */
+export function buildAdayQuery(mahalleAdi, ilce = ILCE_ADI) {
+  return fillTemplate(OVERPASS_ADAY_SORGUSU, mahalleAdi, ilce);
+}
+
+/**
+ * Restaurant candidates from an Overpass response: [{ osm_id, ad, lat, lon, tur }].
+ * Elements without a name or a position are skipped; each OSM element appears once.
+ */
+export function parseOverpassAdaylar(json) {
+  const elements = Array.isArray(json?.elements) ? json.elements : [];
+  const seen = new Set();
+  const out = [];
+  for (const el of elements) {
+    const ad = String(el.tags?.name ?? '').trim();
+    const lat = el.lat ?? el.center?.lat;
+    const lon = el.lon ?? el.center?.lon;
+    if (!ad || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const osmId = `${el.type}/${el.id}`;
+    if (seen.has(osmId)) continue;
+    seen.add(osmId);
+    out.push({ osm_id: osmId, ad, lat, lon, tur: el.tags.amenity ?? '' });
+  }
+  return out;
 }
 
 /**
@@ -82,14 +124,24 @@ export function parseOverpassMahalle(json, mahalleAdi) {
   };
 }
 
-/** Downloads one mahalle from Overpass. Returns the parsed import shape. */
-export async function fetchMahalleFromOverpass(mahalleAdi, fetchFn = fetch) {
-  const body = `data=${encodeURIComponent(buildMahalleQuery(mahalleAdi))}`;
+async function postOverpass(query, fetchFn) {
   const res = await fetchFn(OVERPASS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
+    body: `data=${encodeURIComponent(query)}`,
   });
   if (!res.ok) throw new Error(`Overpass yanıtı başarısız (HTTP ${res.status}). Biraz sonra tekrar deneyin.`);
-  return parseOverpassMahalle(await res.json(), mahalleAdi);
+  return res.json();
+}
+
+/** Downloads one mahalle's streets from Overpass. Returns the parsed import shape. */
+export async function fetchMahalleFromOverpass(mahalleAdi, { ilce = ILCE_ADI, fetchFn = fetch } = {}) {
+  const json = await postOverpass(buildMahalleQuery(mahalleAdi, ilce), fetchFn);
+  return parseOverpassMahalle(json, mahalleAdi);
+}
+
+/** Downloads the restaurant candidates of one mahalle. Returns [{ osm_id, ad, lat, lon, tur }]. */
+export async function fetchAdaylarFromOverpass(mahalleAdi, { ilce = ILCE_ADI, fetchFn = fetch } = {}) {
+  const json = await postOverpass(buildAdayQuery(mahalleAdi, ilce), fetchFn);
+  return parseOverpassAdaylar(json);
 }
